@@ -4,6 +4,11 @@ class_name MyGraph
 var nodes = {}
 var edges = []
 
+func get_random_node():
+	var node_keys = nodes.keys()
+	var random_key = node_keys[randi_range(0, node_keys.size())]
+	return nodes[random_key]
+
 func _ready() -> void:
 	var obstacles = get_parent().obstacles
 	var window_size = get_viewport_rect().size

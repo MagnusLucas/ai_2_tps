@@ -1,17 +1,28 @@
 extends Node2D
 
 var obstacles = []
+var graph : MyGraph = null
+var characters = []
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	for i in range(5):
 		create_obstacle()
-	add_child(MyGraph.new())
-
-
-# Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(_delta: float) -> void:
-	pass
+	graph = MyGraph.new()
+	add_child(graph)
+	for i in 4:
+		var character = Character.new()
+		character.position = graph.get_random_node().position
+		character.rotation = 2 * PI / 8 * randi_range(0, 7)
+		var correct_position = false
+		while not correct_position:
+			correct_position = true
+			for other in characters:
+				if character.position == other.position:
+					correct_position = false
+					character.position = graph.get_random_node().position
+		add_child(character)
+		characters.append(character)
 
 # Creates obstacle by picking 3-6 random points in a radius of MAX_RADIUS_SIZE,
 # places it in a random position, but within window borders.
