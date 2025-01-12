@@ -4,4 +4,5 @@ class_name MyGraphNode
 var connected_edges = []
 
 func _draw() -> void:
-	draw_circle(Vector2.ZERO, 4, Color.CADET_BLUE)
+	const color = Color.CADET_BLUE
+	draw_circle(Vector2.ZERO, 4, Color(color, Globals.GRAPH_VISIBILITY))

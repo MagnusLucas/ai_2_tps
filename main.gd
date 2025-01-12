@@ -5,6 +5,7 @@ var graph : MyGraph = null
 var characters = []
 
 # Called when the node enters the scene tree for the first time.
+# Places obstacles, creates the graph and randomly places players in nodes of the graph
 func _ready() -> void:
 	for i in range(5):
 		create_obstacle()

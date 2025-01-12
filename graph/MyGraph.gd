@@ -4,6 +4,7 @@ class_name MyGraph
 var nodes = {}
 var edges = []
 
+# To place things randomly in reachable areas of the map
 func get_random_node():
 	var node_keys = nodes.keys()
 	var random_key = node_keys[randi_range(0, node_keys.size())]
@@ -18,7 +19,7 @@ func _ready() -> void:
 	for y in range(Globals.RADIUS, window_size.y - Globals.RADIUS, ACCURACY):
 		for x in range(Globals.RADIUS, window_size.x - Globals.RADIUS, ACCURACY):
 			var node_position = Vector2(x, y)
-			if Character.check_if_placable(node_position, obstacles):
+			if Character.check_if_placeable(node_position, obstacles):
 				var node = MyGraphNode.new()
 				node.position = node_position
 				add_child(node)

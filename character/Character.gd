@@ -19,10 +19,11 @@ enum State{
 	COLLECT_ARMOR,
 }
 
-static func check_if_placable(a_position, a_obstacles):
+# For generating the graph. Checks if the character can be placed in a_position where you want to create a node
+static func check_if_placeable(a_position, a_obstacles):
 	for obstacle in a_obstacles:
-		const accuracy = 36
-		for angle_to_check in range(0., 360., 360. / accuracy):
+		const accuracy_divisor = 36 # bigger => higher accuracy
+		for angle_to_check in range(0., 360., 360. / accuracy_divisor):
 			var in_radians = deg_to_rad(angle_to_check)
 			if obstacle.is_point_inside(a_position + Vector2.RIGHT.rotated(in_radians) * Globals.RADIUS):
 				return false
