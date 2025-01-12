@@ -6,12 +6,12 @@ var cost
 
 # Checks if the edge wouldn't intersect any obstacles
 static func doesnt_intersect_obstacle(from, to, obstacles):
-	var polyline = PackedVector2Array([from, to])
+	var egde = PackedVector2Array([from, to])
 	for obstacle in obstacles:
 		var polygon = obstacle.vertices.duplicate()
 		for i in polygon.size():
 			polygon[i] += obstacle.position
-		if Geometry2D.intersect_polyline_with_polygon(polyline, polygon):
+		if Geometry2D.intersect_polyline_with_polygon(egde, polygon):
 			return false
 	return true
 

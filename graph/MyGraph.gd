@@ -10,6 +10,20 @@ func get_random_node():
 	var random_key = node_keys[randi_range(0, node_keys.size())]
 	return nodes[random_key]
 
+## TODO
+func find_closest_node(position_on_screen : Vector2i) -> MyGraphNode:
+	return null
+
+## TODO
+func AStar(from : MyGraphNode, to : MyGraphNode) -> Array[MyGraphNode]:
+	return []
+
+
+func find_path(from : Vector2i, to : Vector2i) -> Array[MyGraphNode]:
+	var from_closest_node : MyGraphNode = find_closest_node(from)
+	var to_closest_node : MyGraphNode = find_closest_node(to)
+	return AStar(from_closest_node, to_closest_node)
+
 func _ready() -> void:
 	var obstacles = get_parent().obstacles
 	var window_size = get_viewport_rect().size
