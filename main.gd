@@ -2,7 +2,8 @@ extends Node2D
 
 var obstacles = []
 var graph : MyGraph = null
-var characters = []
+var characters = {}
+var collectibles = {}
 
 # Called when the node enters the scene tree for the first time.
 # Places obstacles, creates the graph and randomly places players in nodes of the graph
@@ -12,18 +13,11 @@ func _ready() -> void:
 	graph = MyGraph.new()
 	add_child(graph)
 	for i in 4:
-		var character = Character.new()
-		character.position = graph.get_random_node().position
-		character.rotation = 2 * PI / 8 * randi_range(0, 7)
-		var correct_position = false
-		while not correct_position:
-			correct_position = true
-			for other in characters:
-				if character.position == other.position:
-					correct_position = false
-					character.position = graph.get_random_node().position
-		add_child(character)
-		characters.append(character)
+		add_child(Character.new(graph, characters))
+	for i in 3:
+		add_child(HealthPack.new(graph, collectibles))
+		add_child(Armor.new(graph, collectibles))
+		add_child(Ammo.new(graph, collectibles))
 
 # Creates obstacle by picking 3-6 random points in a radius of MAX_RADIUS_SIZE,
 # places it in a random position, but within window borders.

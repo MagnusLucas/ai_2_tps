@@ -5,9 +5,13 @@ const VISIBILITY_CONE = 60.0
 const ROTATION_SPEED = 10.0
 const WALK_SPEED = 30.0
 
-var HP = 100
-var ammo_supply = 20
-var armor_supply = 100
+const MAX_HP = 100
+const MAX_AMMO_SUPPLY = 20
+const MAX_ARMOR_SUPPLY = 100
+
+var HP = MAX_HP
+var ammo_supply = MAX_AMMO_SUPPLY
+var armor_supply = MAX_ARMOR_SUPPLY
 
 var memory : Memory
 var current_state : State
@@ -21,6 +25,7 @@ enum State{
 	COLLECT_ARMOR,
 }
 
+signal notice_collectible(collectible : Collectible)
 
 # For generating the graph. Checks if the character can be placed in a_position where you want to create a node
 static func check_if_placeable(a_position, a_obstacles):
@@ -32,11 +37,38 @@ static func check_if_placeable(a_position, a_obstacles):
 				return false
 	return true
 
+# Places character on a tile without other character, randomizes it's rotation
+func _init(graph : MyGraph, other_characters : Dictionary) -> void:
+	var placing = graph.get_random_node()
+	while other_characters.has(placing):
+		placing = graph.get_random_node()
+	other_characters[placing] = self
+	position = placing.position
+	rotation = 2 * PI / 8 * randi_range(0, 7)
+
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	memory = Memory.new()
 	current_state = State.RANDOM_WALK
+	notice_collectible.connect(_on_collectible_noticed)
 
+func _input(event: InputEvent) -> void:
+	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT 
+		and get_global_mouse_position().distance_to(position) <= Globals.RADIUS
+		and event.is_pressed()):
+		get_parent().get_child(0).text = ("HP: " + str(HP) +"/" + str(MAX_HP) + 
+				" Armor: " + str(armor_supply) + "/" + str(MAX_ARMOR_SUPPLY) +
+				" Ammo: " + str(ammo_supply) + "/" + str(MAX_AMMO_SUPPLY))
+		armor_supply -= 10
+		queue_redraw()
+
+func _on_collectible_noticed(collectible : Collectible):
+	if collectible is HealthPack:
+		memory.last_seen_healing = collectible.position
+	elif collectible is Ammo:
+		memory.last_seen_ammo = collectible.position
+	elif collectible is Armor:
+		memory.last_seen_armor = collectible.position
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
 func _process(_delta: float) -> void:
@@ -100,4 +132,12 @@ func _draw() -> void:
 	draw_line(Vector2i.ZERO, (Vector2.RIGHT * VISIBILITY_LENGTH).rotated(deg_to_rad(VISIBILITY_CONE/2)), WHAT_THEY_SEE_COLOR)
 	draw_line(Vector2i.ZERO, (Vector2.RIGHT * VISIBILITY_LENGTH).rotated(-deg_to_rad(VISIBILITY_CONE/2)), WHAT_THEY_SEE_COLOR)
 	
-	#TODO: health bar
+	#draws health bar
+	var health_bar_outline = Rect2(Vector2i(-25/2, -20), Vector2i(27,7))
+	var health_bar = Rect2(Vector2i(-25/2, -20), Vector2i(25 * HP / MAX_HP,5))
+	var armor_bar = Rect2(Vector2i(-25/2, -20), Vector2i(25 * armor_supply / MAX_ARMOR_SUPPLY,5))
+	draw_set_transform(Vector2i.ZERO, -rotation)
+	draw_rect(health_bar_outline, Color.BLACK, false, 1)
+	draw_rect(health_bar, Color.LAWN_GREEN)
+	var armor_bar_color = Color(Color.CADET_BLUE, 0.8)
+	draw_rect(armor_bar, armor_bar_color)

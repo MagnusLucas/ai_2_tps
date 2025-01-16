@@ -7,7 +7,7 @@ var edges = []
 # To place things randomly in reachable areas of the map
 func get_random_node():
 	var node_keys = nodes.keys()
-	var random_key = node_keys[randi_range(0, node_keys.size())]
+	var random_key = node_keys[randi_range(0, node_keys.size()-1)]
 	return nodes[random_key]
 
 # iteration aproach no partition Meadow
