@@ -8,4 +8,4 @@ var last_seen_healing : Vector2i
 var engaged_enemy : Vector2i
 var non_engaged_seen_enemies : Array[Vector2i]
 
-var currently_followed_path : Array[MyGraphNode]
+var currently_followed_path : Array[Vector2i]

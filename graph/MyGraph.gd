@@ -53,11 +53,23 @@ func AStar(from : MyGraphNode, to : MyGraphNode) -> Array[MyGraphNode]:
 #}
 	return []
 
+# Checks if smoothing to particular edge would result in intersecting an obstacle
+func can_smooth(from: Vector2i, to: Vector2i) -> bool:
+	var obstacles = get_parent().obstacles
+	var perpendicular = Vector2(to - from).normalized().rotated(2 * PI / 4) * Globals.RADIUS
+	return (MyGraphEdge.doesnt_intersect_obstacle(from + perpendicular, to + perpendicular, obstacles) and 
+			MyGraphEdge.doesnt_intersect_obstacle(from - perpendicular, to - perpendicular, obstacles))
 
-func find_path(from : Vector2i, to : Vector2i) -> Array[MyGraphNode]:
+# TODO
+# Converts path from array of MyGraphNodes to array of Vector2i positions on screen 
+# and smooths the path, making the agents walk not following graph edges
+func path_smoothing(from : Vector2i, to : Vector2i, through : Array[MyGraphNode]) -> Array[Vector2i]:
+	return []
+
+func find_path(from : Vector2i, to : Vector2i) -> Array[Vector2i]:
 	var from_closest_node : MyGraphNode = find_closest_node(from)
 	var to_closest_node : MyGraphNode = find_closest_node(to)
-	return AStar(from_closest_node, to_closest_node)
+	return path_smoothing(from, to, AStar(from_closest_node, to_closest_node))
 
 func _ready() -> void:
 	var obstacles = get_parent().obstacles

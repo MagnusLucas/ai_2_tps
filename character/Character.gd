@@ -83,7 +83,7 @@ func collect(object_position : Vector2i):
 			wander()
 
 ## TODO - > remove visited nodes
-func follow_path(path : Array[MyGraphNode]):
+func follow_path(path : Array[Vector2i]):
 	pass
 
 
