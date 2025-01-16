@@ -10,12 +10,47 @@ func get_random_node():
 	var random_key = node_keys[randi_range(0, node_keys.size())]
 	return nodes[random_key]
 
-## TODO
+# iteration aproach no partition Meadow
 func find_closest_node(position_on_screen : Vector2i) -> MyGraphNode:
-	return null
+	var distance = 10000000000000
+	var node
+	for i in nodes:
+		position_on_screen.distance_to(nodes[i])
+		if (position_on_screen.distance_to(nodes[i])<distance):
+			distance = position_on_screen.distance_to(nodes[i])
+			node = i
+	return nodes[node]
 
 ## TODO
 func AStar(from : MyGraphNode, to : MyGraphNode) -> Array[MyGraphNode]:
+	
+#bool Raven_PathPlanner::CreatePathToPosition(Vector2D TargetPos,
+#std::list<Vector2D>& path)
+
+#//ClosestNodeToPosition = from
+#//create an instance of the A* search class to search for a path between the
+#//closest node to the bot and the closest node to the target position. This
+#//A* search will utilize the Euclidean straight line heuristic
+#typedef Graph_SearchAStar< Raven_Map::NavGraph, Heuristic_Euclid> AStar;
+#AStar search(m_NavGraph,
+#ClosestNodeToBot,
+#ClosestNodeToTarget);
+#//grab the path
+#std::list<int> PathOfNodeIndices = search.GetPathToTarget();
+#//if the search is successful convert the node indices into position vectors
+#if (!PathOfNodeIndices.empty())
+#{
+#ConvertIndicesToVectors(PathOfNodeIndices, path);
+#//remember to add the target position to the end of the path
+#path.push_back(TargetPos);
+#return true;
+#}
+#else
+#{
+#//no path found by the search
+#return false;
+#}
+#}
 	return []
 
 
@@ -54,3 +89,7 @@ func _ready() -> void:
 						other_node.connected_edges.append(edge)
 						add_child(edge)
 						edges.append(edge)
+						
+						#thing for A* to work
+						edge.cost = node.position.distance_to(other_node_position)
+						
