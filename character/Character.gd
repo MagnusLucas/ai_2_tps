@@ -134,9 +134,10 @@ func _draw() -> void:
 	draw_line(Vector2i.ZERO, (Vector2.RIGHT * VISIBILITY_LENGTH).rotated(-deg_to_rad(VISIBILITY_CONE/2)), WHAT_THEY_SEE_COLOR)
 	
 	#draws health bar
-	var health_bar_outline = Rect2(Vector2i(-25/2, -20), Vector2i(27,7))
-	var health_bar = Rect2(Vector2i(-25/2, -20), Vector2i(25 * HP / MAX_HP,5))
-	var armor_bar = Rect2(Vector2i(-25/2, -20), Vector2i(25 * armor_supply / MAX_ARMOR_SUPPLY,5))
+	var length = 26.0
+	var health_bar_outline = Rect2(Vector2(-length/2, -20), Vector2(length + 2,7))
+	var health_bar = Rect2(Vector2(-length/2, -20), Vector2(length * HP / MAX_HP,5))
+	var armor_bar = Rect2(Vector2(-length/2, -20), Vector2(length * armor_supply / MAX_ARMOR_SUPPLY,5))
 	draw_set_transform(Vector2i.ZERO, -rotation)
 	draw_rect(health_bar_outline, Color.BLACK, false, 1)
 	draw_rect(health_bar, Color.LAWN_GREEN)

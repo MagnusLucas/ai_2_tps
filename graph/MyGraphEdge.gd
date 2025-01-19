@@ -4,6 +4,8 @@ class_name MyGraphEdge
 var connected_nodes = {"from" : null, "to" : null}
 var cost
 
+var is_in_path = false
+
 # Checks if the edge wouldn't intersect any obstacles
 static func doesnt_intersect_obstacle(from, to, obstacles):
 	var egde = PackedVector2Array([from, to])
@@ -18,7 +20,10 @@ static func doesnt_intersect_obstacle(from, to, obstacles):
 func _draw() -> void:
 	if connected_nodes["from"] != null and connected_nodes["to"] != null:
 		const color = Color.SKY_BLUE
-		draw_line(connected_nodes["from"].position, connected_nodes["to"].position, Color(color, Globals.GRAPH_VISIBILITY))
+		if is_in_path:
+			draw_line(connected_nodes["from"].position, connected_nodes["to"].position, color)
+		else:
+			draw_line(connected_nodes["from"].position, connected_nodes["to"].position, Color(color, Globals.GRAPH_VISIBILITY))
 		
 func neighbour(node : MyGraphNode):
 	if(connected_nodes.from == node):
