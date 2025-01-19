@@ -15,42 +15,77 @@ func find_closest_node(position_on_screen : Vector2i) -> MyGraphNode:
 	var distance = 10000000000000
 	var node
 	for i in nodes:
-		position_on_screen.distance_to(nodes[i])
-		if (position_on_screen.distance_to(nodes[i])<distance):
-			distance = position_on_screen.distance_to(nodes[i])
+		position_on_screen.distance_to(nodes[i].position)
+		if (position_on_screen.distance_to(nodes[i].position)<distance):
+			distance = position_on_screen.distance_to(nodes[i].position)
 			node = i
 	return nodes[node]
 
 ## TODO
 func AStar(from : MyGraphNode, to : MyGraphNode) -> Array[MyGraphNode]:
+	#dictionory assigns heurisitc by distance to target
+	var heuristic_dic = {}
+	for i in nodes:
+		heuristic_dic[nodes[i]] = i.distance_to(to.position)
 	
-#bool Raven_PathPlanner::CreatePathToPosition(Vector2D TargetPos,
-#std::list<Vector2D>& path)
+	#freaky way to do a set as dictionary 
+	#set.add(value) <-> dict[value] = null
+	#set.remove(value) <-> dict.erase(value)
+	#set.has(value) <-> dict.has(value) or value in dict
+	var open_set = {}
+	open_set[from] = null
+	#// For node n, cameFrom[n] is the node immediately preceding it on the cheapest path from the start
+	#// to n currently known.
+	var came_from = {}
+#
+	var g_score = {}
+	for i in nodes:
+		g_score[nodes[i]] = 10000000000000
+	g_score[from] = 0
+	var f_score = g_score.duplicate()
+	f_score[from] = heuristic_dic[from]
+	var current = from
+	var tentative_g_score 
+	while(not open_set.is_empty()):
+		#print("aaaa")
+		for i in open_set:
+			print(f_score[current])
+			print(f_score[i])
+			print("/n")
+			if(f_score[current]<f_score[i]):
+				#print("aredawe")
+				current = i
+		if(current == to):
+			var ar = [current]
+			return ar
+				 #return reconstruct_path(cameFrom, current)
+			
+		#print(open_set.erase(current))
+		open_set.erase(current)
+		#if(open_set.erase(current)):
+			#return[]
+			#print(open_set)
+		for j in current.connected_edges:
+				#print(current.connected_edges)
+			tentative_g_score = g_score[current] + j.cost
+				#print(tentative_g_score)
+				#print(g_score[j.neighbour(current)])
+			#print("bbbbb")
+			if tentative_g_score < g_score[j.neighbour(current)]:
+				#print("ccccc")
+				var neighbour = j.neighbour(current)
+				came_from[neighbour] = current 
+				g_score[neighbour] = tentative_g_score
+				f_score[neighbour] = tentative_g_score + heuristic_dic[neighbour]
+				if not open_set.has(neighbour):
+					#print("ddddd")
+					open_set[neighbour] = null
+						
+					#print("bbb")
+				   
 
-#//ClosestNodeToPosition = from
-#//create an instance of the A* search class to search for a path between the
-#//closest node to the bot and the closest node to the target position. This
-#//A* search will utilize the Euclidean straight line heuristic
-#typedef Graph_SearchAStar< Raven_Map::NavGraph, Heuristic_Euclid> AStar;
-#AStar search(m_NavGraph,
-#ClosestNodeToBot,
-#ClosestNodeToTarget);
-#//grab the path
-#std::list<int> PathOfNodeIndices = search.GetPathToTarget();
-#//if the search is successful convert the node indices into position vectors
-#if (!PathOfNodeIndices.empty())
-#{
-#ConvertIndicesToVectors(PathOfNodeIndices, path);
-#//remember to add the target position to the end of the path
-#path.push_back(TargetPos);
-#return true;
-#}
-#else
-#{
-#//no path found by the search
-#return false;
-#}
-#}
+
+
 	return []
 
 # Checks if smoothing to particular edge would result in intersecting an obstacle
