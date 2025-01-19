@@ -6,6 +6,25 @@ var edges = []
 
 var path_beginning = null
 var path_end = null
+var path = []
+
+func _input(event: InputEvent) -> void:
+	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT 
+		and event.is_pressed()):
+		if !path_beginning:
+			path_beginning = get_global_mouse_position()
+		else:
+			path_end = get_global_mouse_position()
+			path = find_path(path_beginning, path_end)
+		queue_redraw()
+
+func _draw() -> void:
+	if(path_beginning):
+		draw_circle(path_beginning, Globals.RADIUS, Color.CHOCOLATE)
+	if(path_end):
+		draw_circle(path_end, Globals.RADIUS, Color.DARK_BLUE)
+		for point in range(path.size() - 1):
+			draw_line(path[point], path[point + 1], Color.SKY_BLUE)
 
 # To place things randomly in reachable areas of the map
 func get_random_node():
@@ -86,17 +105,33 @@ func AStar(from : MyGraphNode, to : MyGraphNode) -> Array[MyGraphNode]:
 	return []
 
 # Checks if smoothing to particular edge would result in intersecting an obstacle
-func can_smooth(from: Vector2i, to: Vector2i) -> bool:
+func can_smooth(from: Vector2, to: Vector2) -> bool:
 	var obstacles = get_parent().obstacles
 	var perpendicular = Vector2(to - from).normalized().rotated(2 * PI / 4) * Globals.RADIUS
 	return (MyGraphEdge.doesnt_intersect_obstacle(from + perpendicular, to + perpendicular, obstacles) and 
 			MyGraphEdge.doesnt_intersect_obstacle(from - perpendicular, to - perpendicular, obstacles))
 
-# TODO
+
 # Converts path from array of MyGraphNodes to array of Vector2i positions on screen 
 # and smooths the path, making the agents walk not following graph edges
 func path_smoothing(from : Vector2i, to : Vector2i, through : Array[MyGraphNode]) -> Array[Vector2i]:
-	return []
+	var path : Array[Vector2i] = [from]
+	for node in through:
+		path.append(Vector2i(node.position))
+	path.append(to)
+	var E1 = 0
+	var E2 = 2
+	while E2 < path.size() - 1:
+		if can_smooth(path[E1], path[E2]):
+			path.remove_at(E1 + 1)
+			if E2 > path.size() - 1:
+				E2 = path.size() - 1
+		else:
+			E1 += 1
+			E2 += 1
+	if path.size() > 2 and can_smooth(path[path.size() - 1], path[path.size() - 3]):
+		path.remove_at(path.size() - 2)
+	return path
 
 func find_path(from : Vector2i, to : Vector2i) -> Array[Vector2i]:
 	var from_closest_node : MyGraphNode = find_closest_node(from)
