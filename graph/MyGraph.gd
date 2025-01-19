@@ -23,7 +23,7 @@ func get_edge(from : MyGraphNode, to : MyGraphNode) -> MyGraphEdge:
 
 # iteration aproach no partition Meadow
 func find_closest_node(position_on_screen : Vector2i) -> MyGraphNode:
-	var distance = 10000000000000
+	var distance = INF
 	var node
 	for i in nodes:
 		position_on_screen.distance_to(nodes[i].position)
@@ -35,13 +35,11 @@ func find_closest_node(position_on_screen : Vector2i) -> MyGraphNode:
 func reconstruct_path(cameFrom : Dictionary, current : MyGraphNode) -> Array[MyGraphNode]:
 	var total_path : Array[MyGraphNode] = [current]
 	while current in cameFrom.keys():
-		get_edge(current, cameFrom[current]).is_in_path = true
-		get_edge(current, cameFrom[current]).queue_redraw()
 		current = cameFrom[current]
 		total_path.push_front(current)
 	return total_path
 
-## TODO
+
 func AStar(from : MyGraphNode, to : MyGraphNode) -> Array[MyGraphNode]:
 	#dictionory assigns heurisitc by distance to target
 	var heuristic_dic = {}
@@ -57,16 +55,16 @@ func AStar(from : MyGraphNode, to : MyGraphNode) -> Array[MyGraphNode]:
 #
 	var g_score = {}
 	for i in nodes:
-		g_score[nodes[i]] = 10000000000000
+		g_score[nodes[i]] = INF
 	g_score[from] = 0
 	var f_score = g_score.duplicate()
 	f_score[from] = heuristic_dic[from]
 	
 	while(not open_set.is_empty()):
 		#current := the node in openSet having the lowest fScore[] value
-		var current = from
+		var current = open_set[0]
 		for node in open_set:
-			if(f_score[current]<f_score[node]):
+			if(f_score[current]>f_score[node]):
 				current = node
 		
 		
