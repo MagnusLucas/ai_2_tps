@@ -20,6 +20,8 @@ var velocity : Vector2 = Vector2.ZERO
 const speed = Globals.RADIUS * 10
 var in_focus = false
 
+const rotation_speed = 30./360 * 2 * PI
+
 
 enum State{
 	RANDOM_WALK,
@@ -30,6 +32,7 @@ enum State{
 	COLLECT_ARMOR,
 }
 
+var shooting : bool = false
 var map_graph : MyGraph
 
 signal notice_collectible(collectible : Collectible)
@@ -108,10 +111,15 @@ func _process(delta: float) -> void:
 		State.RANDOM_WALK:
 			wander()
 		State.FIGHT:
-			fight(memory.engaged_enemy)
-			if HP < 51:
-				#current_state = State.FLEE
-				current_state = State.COLLECT_HEALING
+			if !memory.engaged_enemy:
+				current_state = State.RANDOM_WALK
+			else:
+				fight(memory.engaged_enemy, delta)
+				memory.currently_followed_path = get_parent().graph.find_path(position, memory.engaged_enemy)
+				follow_path()
+				if HP < 51:
+					#current_state = State.FLEE
+					current_state = State.COLLECT_HEALING
 		State.FLEE:
 			evade(memory.engaged_enemy)
 			
@@ -135,17 +143,16 @@ func _process(delta: float) -> void:
 			collect(get_parent().get_closest_collectible(Armor, position))
 			#collect(memory.last_seen_armor)
 	position += velocity * speed * delta
-	if accumulate_time > 1:
-		accumulate_time -= 1
-		if randi() % 3 == 0 and current_state == State.RANDOM_WALK:
-			var state = randi() % 3
+	if memory.engaged_enemy:
+		var angle_to_enemy = (memory.engaged_enemy - position).angle()
+		rotation = move_toward(rotation, angle_to_enemy, delta)
+		if ammo_supply > 0 and HP > MAX_HP/2:
+			current_state = State.FIGHT
+		else:
 			memory.currently_followed_path = []
-			if state == 0:
-				current_state = State.COLLECT_AMMO
-			elif state == 1:
-				current_state = State.COLLECT_ARMOR
-			else:
-				current_state = State.COLLECT_HEALING
+			velocity = Vector2.ZERO
+			current_state = State.FLEE
+			current_state = State.COLLECT_AMMO #for now
 	if in_focus:
 		get_parent().get_child(0).text = ("HP: " + str(HP) +"/" + str(MAX_HP) + 
 				" Armor: " + str(armor_supply) + "/" + str(MAX_ARMOR_SUPPLY) +
@@ -158,13 +165,31 @@ func wander():
 		memory.currently_followed_path = map_graph.find_path(position, map_graph.get_random_node().position)
 	follow_path()
 
-## TODO - change state if low hp/ammo to flee
-func fight(enemy : Vector2i):
-	pass
+func take_damage(damage_value):
+	if armor_supply > damage_value:
+		armor_supply -= damage_value
+		return
+	elif armor_supply > 0:
+		damage_value -= armor_supply
+		armor_supply = 0
+	HP -= damage_value
+
+var shooting_accumulator = 0
+## 
+func fight(enemy : Vector2, delta):
+	if enemy:
+		shooting_accumulator += delta
+		if shooting_accumulator > 0.2:
+			shooting_accumulator -= 0.2
+			ammo_supply -= 1
+			get_parent().get_enemy(enemy, self).take_damage(5)
 
 ## TODO - until not seen??? then collect hp/ammo/armor
-func evade(enemy_position : Vector2i):
-	pass
+func evade(enemy_position):
+	if !enemy_position:
+		current_state = State.RANDOM_WALK
+	else:
+		pass
 
 ## Handles collecting collectibles
 func collect(object_position : Vector2):
@@ -230,6 +255,10 @@ func _draw() -> void:
 			color = Color.LAWN_GREEN
 		State.COLLECT_ARMOR:
 			color = Color.CADET_BLUE
+		State.FIGHT:
+			color = Color.ORANGE_RED
+		State.FLEE:
+			color = Color.MEDIUM_SLATE_BLUE
 	for point in range(memory.currently_followed_path.size()-1):
 		draw_line(Vector2(memory.currently_followed_path[point]) - position, Vector2(memory.currently_followed_path[point+1]) - position, color)
 	if memory.currently_followed_path != []:
@@ -241,3 +270,6 @@ func _draw() -> void:
 			draw_line(Vector2.ZERO, enemy_position - position, Color.CHOCOLATE)
 		if memory.engaged_enemy:
 			draw_circle(memory.engaged_enemy - position, 4, Color.WHITE, false, 1)
+
+	if shooting:
+		draw_line(Vector2.ZERO, memory.engaged_enemy - position, Color.RED)

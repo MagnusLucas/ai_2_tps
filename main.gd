@@ -15,6 +15,16 @@ func get_closest_collectible(class_type, closest_to):
 			matching[0] = item
 	return matching[0]
 
+func get_enemy(enemy_position : Vector2, character):
+	var closest = null
+	var shortest_distance : float = INF
+	for enemy in characters.values():
+		if enemy != character:
+			if enemy.position.distance_to(enemy_position) < shortest_distance:
+				closest = enemy
+				shortest_distance = enemy.position.distance_to(enemy_position) < shortest_distance
+	return closest
+
 func get_random_collectible(class_type):
 	var matching = []
 	for item_position in collectibles:

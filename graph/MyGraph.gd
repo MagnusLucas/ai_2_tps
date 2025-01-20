@@ -8,15 +8,15 @@ var path_beginning = null
 var path_end = null
 var path = []
 
-func _input(event: InputEvent) -> void:
-	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT 
-		and event.is_pressed()):
-		if !path_beginning:
-			path_beginning = get_global_mouse_position()
-		else:
-			path_end = get_global_mouse_position()
-			path = find_path(path_beginning, path_end)
-		queue_redraw()
+#func _input(event: InputEvent) -> void:
+	#if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT 
+		#and event.is_pressed()):
+		#if !path_beginning:
+			#path_beginning = get_global_mouse_position()
+		#else:
+			#path_end = get_global_mouse_position()
+			#path = find_path(path_beginning, path_end)
+		#queue_redraw()
 
 func _draw() -> void:
 	if(path_beginning):
