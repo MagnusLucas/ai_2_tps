@@ -26,6 +26,9 @@ func _input(event: InputEvent) -> void:
 func _process(_delta: float) -> void:
 	queue_redraw()
 
-func _on_collected() -> void:
-	active = false
-	timer.start(TIMER_TIMEOUT)
+func _on_collected() -> bool:
+	if active:
+		active = false
+		timer.start(TIMER_TIMEOUT)
+		return true
+	return false

@@ -5,6 +5,24 @@ var graph : MyGraph = null
 var characters = {}
 var collectibles = {}
 
+func get_closest_collectible(class_type, closest_to):
+	var matching = []
+	for item_position in collectibles:
+		if is_instance_of(collectibles[item_position], class_type):
+			matching.append(item_position.position)
+	for item in matching:
+		if closest_to.distance_to(item) < closest_to.distance_to(matching[0]):
+			matching[0] = item
+	return matching[0]
+
+func get_random_collectible(class_type):
+	var matching = []
+	for item_position in collectibles:
+		if is_instance_of(collectibles[item_position], class_type):
+			matching.append(item_position.position)
+	return matching.pick_random()
+
+
 # Called when the node enters the scene tree for the first time.
 # Places obstacles, creates the graph and randomly places players in nodes of the graph
 func _ready() -> void:

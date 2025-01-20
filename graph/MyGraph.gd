@@ -114,10 +114,10 @@ func can_smooth(from: Vector2, to: Vector2) -> bool:
 
 # Converts path from array of MyGraphNodes to array of Vector2i positions on screen 
 # and smooths the path, making the agents walk not following graph edges
-func path_smoothing(from : Vector2i, to : Vector2i, through : Array[MyGraphNode]) -> Array[Vector2i]:
-	var path : Array[Vector2i] = [from]
+func path_smoothing(from : Vector2, to : Vector2, through : Array[MyGraphNode]) -> Array[Vector2]:
+	var path : Array[Vector2] = [from]
 	for node in through:
-		path.append(Vector2i(node.position))
+		path.append(node.position)
 	path.append(to)
 	var E1 = 0
 	var E2 = 2
@@ -133,7 +133,7 @@ func path_smoothing(from : Vector2i, to : Vector2i, through : Array[MyGraphNode]
 		path.remove_at(path.size() - 2)
 	return path
 
-func find_path(from : Vector2i, to : Vector2i) -> Array[Vector2i]:
+func find_path(from : Vector2, to : Vector2) -> Array[Vector2]:
 	var from_closest_node : MyGraphNode = find_closest_node(from)
 	var to_closest_node : MyGraphNode = find_closest_node(to)
 	return path_smoothing(from, to, AStar(from_closest_node, to_closest_node))
@@ -150,7 +150,7 @@ func _ready() -> void:
 			if Character.check_if_placeable(node_position, obstacles):
 				var node = MyGraphNode.new()
 				node.position = node_position
-				add_child(node)
+				add_child(node, true)
 				nodes[node_position] = node
 				for other_node_position in [Vector2(x - ACCURACY, y - ACCURACY), 
 				Vector2(x, y - ACCURACY),
