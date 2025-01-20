@@ -34,6 +34,7 @@ enum State{
 
 var shooting : bool = false
 var map_graph : MyGraph
+var starting_position : Vector2
 
 signal notice_collectible(collectible : Collectible)
 
@@ -54,6 +55,7 @@ func _init(graph : MyGraph, other_characters : Dictionary) -> void:
 	while other_characters.has(placing):
 		placing = graph.get_random_node()
 	other_characters[placing] = self
+	starting_position = placing.position
 	position = placing.position
 	rotation = 2 * PI / 8 * randi_range(0, 7)
 
@@ -62,6 +64,16 @@ func _ready() -> void:
 	memory = Memory.new()
 	current_state = State.RANDOM_WALK
 	notice_collectible.connect(_on_collectible_noticed)
+
+func reset() -> void:
+	position = starting_position
+	rotation = 2 * PI / 8 * randi_range(0, 7)
+	HP = MAX_HP
+	armor_supply = MAX_ARMOR_SUPPLY
+	ammo_supply = MAX_AMMO_SUPPLY
+	velocity = Vector2.ZERO
+	memory = Memory.new()
+	current_state = State.RANDOM_WALK
 
 func _input(event: InputEvent) -> void:
 	if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT 
@@ -173,6 +185,8 @@ func take_damage(damage_value):
 		damage_value -= armor_supply
 		armor_supply = 0
 	HP -= damage_value
+	if HP <= 0:
+		reset()
 
 var shooting_accumulator = 0
 ## 
@@ -182,7 +196,7 @@ func fight(enemy : Vector2, delta):
 		if shooting_accumulator > 0.2:
 			shooting_accumulator -= 0.2
 			ammo_supply -= 1
-			get_parent().get_enemy(enemy, self).take_damage(5)
+			get_parent().get_enemy(enemy, self).take_damage(15)
 
 ## TODO - until not seen??? then collect hp/ammo/armor
 func evade(enemy_position):
