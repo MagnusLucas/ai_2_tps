@@ -16,6 +16,9 @@ var armor_supply = MAX_ARMOR_SUPPLY
 var memory : Memory
 var current_state : State
 
+var velocity : Vector2 = Vector2.ZERO
+const speed = Globals.RADIUS * 40
+
 enum State{
 	RANDOM_WALK,
 	FIGHT,
@@ -24,6 +27,8 @@ enum State{
 	COLLECT_HEALING,
 	COLLECT_ARMOR,
 }
+
+var map_graph : MyGraph
 
 signal notice_collectible(collectible : Collectible)
 
@@ -39,6 +44,7 @@ static func check_if_placeable(a_position, a_obstacles):
 
 # Places character on a tile without other character, randomizes it's rotation
 func _init(graph : MyGraph, other_characters : Dictionary) -> void:
+	map_graph = graph
 	var placing = graph.get_random_node()
 	while other_characters.has(placing):
 		placing = graph.get_random_node()
@@ -71,8 +77,7 @@ func _on_collectible_noticed(collectible : Collectible):
 		memory.last_seen_armor = collectible.position
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
-func _process(_delta: float) -> void:
-	
+func _process(delta: float) -> void:
 	match current_state:
 		State.RANDOM_WALK:
 			wander()
@@ -88,10 +93,14 @@ func _process(_delta: float) -> void:
 			collect(memory.last_seen_healing)
 		State.COLLECT_ARMOR:
 			collect(memory.last_seen_armor)
+	position += velocity * speed * delta
+	queue_redraw()
 
 ## TODO - when spots enemy fights if has hp+ammo, flees otherwise
 func wander():
-	pass
+	if memory.currently_followed_path == []:
+		memory.currently_followed_path = map_graph.find_path(position, map_graph.get_random_node().position)
+	follow_path()
 
 ## TODO - change state if low hp/ammo to flee
 func fight(enemy : Vector2i):
@@ -110,15 +119,19 @@ func collect(object_position : Vector2i):
 			## TODO actually collecting, then change state
 		# if following, keep following
 		elif memory.currently_followed_path:
-			follow_path(memory.currently_followed_path)
+			follow_path()
 		# didn't see object, maybe will spot when wandering
 		elif !memory.currently_followed_path and !object_position:
 			wander()
 
-## TODO - > remove visited nodes
-func follow_path(path : Array[Vector2i]):
-	pass
-
+# Follows remembered path
+func follow_path():
+	if position.distance_to(memory.currently_followed_path[0]) < 5:
+		memory.currently_followed_path.remove_at(0)
+	if memory.currently_followed_path != []:
+		velocity = (Vector2(memory.currently_followed_path[0]) - position).normalized()
+	else:
+		velocity = Vector2.ZERO
 
 # Draws the character on screen
 func _draw() -> void:
@@ -132,7 +145,7 @@ func _draw() -> void:
 	draw_arc(Vector2i.ZERO, VISIBILITY_LENGTH, -deg_to_rad(VISIBILITY_CONE/2), deg_to_rad(VISIBILITY_CONE/2), 10, WHAT_THEY_SEE_COLOR)
 	draw_line(Vector2i.ZERO, (Vector2.RIGHT * VISIBILITY_LENGTH).rotated(deg_to_rad(VISIBILITY_CONE/2)), WHAT_THEY_SEE_COLOR)
 	draw_line(Vector2i.ZERO, (Vector2.RIGHT * VISIBILITY_LENGTH).rotated(-deg_to_rad(VISIBILITY_CONE/2)), WHAT_THEY_SEE_COLOR)
-	
+
 	#draws health bar
 	var length = 26.0
 	var health_bar_outline = Rect2(Vector2(-length/2, -20), Vector2(length + 2,7))
@@ -143,3 +156,9 @@ func _draw() -> void:
 	draw_rect(health_bar, Color.LAWN_GREEN)
 	var armor_bar_color = Color(Color.CADET_BLUE, 0.8)
 	draw_rect(armor_bar, armor_bar_color)
+
+	#followed path
+	for point in range(memory.currently_followed_path.size()-2):
+		draw_line(Vector2(memory.currently_followed_path[point]) - position, Vector2(memory.currently_followed_path[point+1]) - position, Color.SKY_BLUE)
+	if memory.currently_followed_path != []:
+		draw_line(Vector2.ZERO, Vector2(memory.currently_followed_path[0]) - position, Color.SKY_BLUE)
