@@ -9,4 +9,4 @@ var engaged_enemy
 var seen_enemies : Array[Vector2]
 
 var currently_followed_path : Array[Vector2]
-var attacking_enemies : Array[Vector2]
+var attacking_enemies : Array[Vector2] = []

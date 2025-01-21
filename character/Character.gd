@@ -1,9 +1,10 @@
 extends Node2D
 class_name Character
 
-const VISIBILITY_CONE = 60.0
+const VISIBILITY_CONE = 180.0 # in degrees
 const ROTATION_SPEED = 10.0
 const WALK_SPEED = 30.0
+const DAMAGE = 5
 
 static var MAX_HP = 100
 static var MAX_AMMO_SUPPLY = 20
@@ -15,6 +16,7 @@ var armor_supply = MAX_ARMOR_SUPPLY
 
 var memory : Memory
 var current_state : State
+var previous_state : State
 
 var velocity : Vector2 = Vector2.ZERO
 const speed = Globals.RADIUS * 10
@@ -39,7 +41,8 @@ var starting_position : Vector2
 signal notice_collectible(collectible : Collectible)
 
 var memory_timer : Timer
-const MEMORY_INTERVAL = 0.2
+const MEMORY_INTERVAL = 2
+const SHOOTING_ACCUMULATOR = 0.2
 
 # For generating the graph. Checks if the character can be placed in a_position where you want to create a node
 static func check_if_placeable(a_position, a_obstacles):
@@ -65,6 +68,7 @@ func _init(graph : MyGraph, other_characters : Dictionary) -> void:
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
 	memory = Memory.new()
+	previous_state = current_state
 	current_state = State.RANDOM_WALK
 	notice_collectible.connect(_on_collectible_noticed)
 	memory_timer = Timer.new()
@@ -77,6 +81,7 @@ func on_timeout():
 	memory_timer.start(MEMORY_INTERVAL)
 
 func reset() -> void:
+	shooting = false
 	position = starting_position
 	rotation = 2 * PI / 8 * randi_range(0, 7)
 	HP = MAX_HP
@@ -84,6 +89,7 @@ func reset() -> void:
 	ammo_supply = MAX_AMMO_SUPPLY
 	velocity = Vector2.ZERO
 	memory = Memory.new()
+	previous_state = current_state
 	current_state = State.RANDOM_WALK
 
 func _input(event: InputEvent) -> void:
@@ -91,7 +97,6 @@ func _input(event: InputEvent) -> void:
 		and get_global_mouse_position().distance_to(position) <= Globals.RADIUS
 		and event.is_pressed()):
 		in_focus = !in_focus
-		queue_redraw()
 
 func _on_collectible_noticed(collectible : Collectible):
 	if collectible is HealthPack:
@@ -129,17 +134,36 @@ func _process(delta: float) -> void:
 	accumulate_time += delta
 	match current_state:
 		State.RANDOM_WALK:
-			wander()
-		State.FIGHT:
-			if !memory.engaged_enemy:
-				current_state = State.RANDOM_WALK
+			previous_state = current_state
+			if HP < 51:
+				if not memory.attacking_enemies == []:
+					current_state = State.FLEE
+				else:
+					current_state = State.COLLECT_HEALING
+			elif armor_supply < 51:
+				if not memory.attacking_enemies == []:
+					current_state = State.FLEE
+				else:
+					current_state = State.COLLECT_ARMOR
+			elif memory.seen_enemies:
+				current_state = State.FIGHT
 			else:
+				current_state = State.RANDOM_WALK
+				wander()
+		State.FIGHT:
+			if ammo_supply < 1:
+					previous_state = current_state
+					current_state = State.COLLECT_AMMO
+			elif memory.engaged_enemy:
 				fight(memory.engaged_enemy, delta)
 				memory.currently_followed_path = get_parent().graph.find_path(position, memory.engaged_enemy)
 				follow_path()
 				if HP < 51:
+					previous_state = current_state
 					current_state = State.FLEE
-					#current_state = State.COLLECT_HEALING
+			else:
+				previous_state = current_state
+				current_state = State.RANDOM_WALK
 		State.FLEE:
 			var closest_attacking_enemy = null
 			var distance = INF
@@ -148,37 +172,38 @@ func _process(delta: float) -> void:
 					distance = position.distance_to(enemy)
 					closest_attacking_enemy = enemy
 			evade(closest_attacking_enemy)
-			
-			#for enemy_position in memory.non_engaged_seen_enemies:
-				#evade(enemy_position)
+			if not memory.attacking_enemies:
+				previous_state = current_state
+				current_state = State.COLLECT_HEALING
 		State.COLLECT_AMMO:
 			collect(get_parent().get_closest_collectible(Ammo, position))
 			if ammo_supply == MAX_AMMO_SUPPLY:
-				if armor_supply < 51:
-					current_state = State.COLLECT_ARMOR
+				previous_state = current_state
+				current_state = State.RANDOM_WALK
 			#collect(memory.last_seen_ammo)
 		State.COLLECT_HEALING:
 			collect(get_parent().get_closest_collectible(HealthPack, position))
 			if HP == MAX_HP:
-				if ammo_supply < 11:
-					current_state = State.COLLECT_AMMO
-				elif armor_supply < 51:
-					current_state = State.COLLECT_AMMO
+				previous_state = current_state
+				current_state = State.RANDOM_WALK
 			#collect(memory.last_seen_healing)
 		State.COLLECT_ARMOR:
 			collect(get_parent().get_closest_collectible(Armor, position))
+			if armor_supply == MAX_ARMOR_SUPPLY:
+				previous_state = current_state
+				current_state = State.RANDOM_WALK
 			#collect(memory.last_seen_armor)
 	position += velocity * speed * delta
 	if memory.engaged_enemy:
 		var angle_to_enemy = (memory.engaged_enemy - position).angle()
 		rotation = move_toward(rotation, angle_to_enemy, delta)
-		if ammo_supply > 0 and HP > MAX_HP/2:
-			current_state = State.FIGHT
-		else:
-			memory.currently_followed_path = []
-			velocity = Vector2.ZERO
-			current_state = State.FLEE
-			current_state = State.COLLECT_AMMO #for now
+		#if ammo_supply > 0 and HP > MAX_HP/2:
+			#current_state = State.FIGHT
+		#else:
+			#memory.currently_followed_path = []
+			#velocity = Vector2.ZERO
+			#current_state = State.FLEE
+			#current_state = State.COLLECT_AMMO #for now
 	else:
 		rotation += rotation_speed * delta
 	if in_focus:
@@ -189,7 +214,7 @@ func _process(delta: float) -> void:
 	queue_redraw()
 ## TODO - when spots enemy fights if has hp+ammo, flees otherwise
 func wander():
-	if memory.currently_followed_path == []:
+	if previous_state != State.RANDOM_WALK or memory.currently_followed_path == []:
 		memory.currently_followed_path = map_graph.find_path(position, map_graph.get_random_node().position)
 	follow_path()
 
@@ -211,38 +236,38 @@ func fight(enemy : Vector2, delta):
 	if enemy:
 		shooting = true
 		shooting_accumulator += delta
-		if shooting_accumulator > 0.2:
-			shooting_accumulator -= 0.2
+		if shooting_accumulator > SHOOTING_ACCUMULATOR:
+			shooting_accumulator -= SHOOTING_ACCUMULATOR
 			ammo_supply -= 1
-			get_parent().get_enemy(enemy, self).take_damage(15, position)
+			get_parent().get_enemy(enemy, self).take_damage(DAMAGE, position)
 
 ## TODO - until not seen??? then collect hp/ammo/armor
 func evade(enemy_position): # this is flee
-	if !enemy_position:
-		current_state = State.RANDOM_WALK
-	else:
+	if enemy_position:
 		var hiding_spot = map_graph.find_hiding_spot(enemy_position, position)
 		memory.currently_followed_path = map_graph.find_path(position, hiding_spot)
+		follow_path()
 
 ## Handles collecting collectibles
 func collect(object_position : Vector2):
 	# if not following path yet, find path
-		if !memory.currently_followed_path and object_position:
-			memory.currently_followed_path = get_parent().graph.find_path(position, object_position)
-			if position.distance_to(memory.currently_followed_path.back()) < 10:
-				var collectible_position  : Vector2 = memory.currently_followed_path.back()
-				memory.currently_followed_path = []
-				var node = map_graph.find_closest_node(collectible_position)
-				if !get_parent().collectibles[node]:
-					print("err!")
-				if get_parent().collectibles[node]._on_collected(self):
-					current_state = State.RANDOM_WALK
-		# if following, keep following
-		elif memory.currently_followed_path:
-			follow_path()
-		# didn't see object, maybe will spot when wandering
-		elif !memory.currently_followed_path and !object_position:
-			wander()
+	if (!memory.currently_followed_path or previous_state != current_state) and object_position:
+		memory.currently_followed_path = get_parent().graph.find_path(position, object_position)
+		follow_path()
+		if position.distance_to(memory.currently_followed_path.back()) < 10:
+			var collectible_position  : Vector2 = memory.currently_followed_path.back()
+			memory.currently_followed_path = []
+			velocity = Vector2.ZERO
+			var node = map_graph.find_closest_node(collectible_position)
+			if !get_parent().collectibles[node]:
+				print("err!")
+			get_parent().collectibles[node]._on_collected(self)
+	# if following, keep following
+	elif memory.currently_followed_path:
+		follow_path()
+	# didn't see object, maybe will spot when wandering
+	#elif !memory.currently_followed_path and !object_position:
+		#wander()
 
 # Follows remembered path
 func follow_path():

@@ -22,7 +22,7 @@ func get_enemy(enemy_position : Vector2, character):
 		if enemy != character:
 			if enemy.position.distance_to(enemy_position) < shortest_distance:
 				closest = enemy
-				shortest_distance = enemy.position.distance_to(enemy_position) < shortest_distance
+				shortest_distance = enemy.position.distance_to(enemy_position)
 	return closest
 
 func get_random_collectible(class_type):
