@@ -170,7 +170,7 @@ func _ready() -> void:
 				Vector2(x + ACCURACY, y - ACCURACY), 
 				Vector2(x - ACCURACY, y)]:
 					if (nodes.has(other_node_position) and 
-					MyGraphEdge.doesnt_intersect_obstacle(node.position, other_node_position, obstacles)):
+					can_smooth(node.position, other_node_position)):
 						# the second part in if is needed to not create paths going through obstacles
 						# just because there is a node on the other side of the obstacle
 						var other_node = nodes[other_node_position]
