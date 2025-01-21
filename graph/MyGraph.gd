@@ -8,6 +8,8 @@ var path_beginning = null
 var path_end = null
 var path = []
 
+var a_obstacles
+
 #func _input(event: InputEvent) -> void:
 	#if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT 
 		#and event.is_pressed()):
@@ -138,10 +140,21 @@ func find_path(from : Vector2, to : Vector2) -> Array[Vector2]:
 	var to_closest_node : MyGraphNode = find_closest_node(to)
 	return path_smoothing(from, to, AStar(from_closest_node, to_closest_node))
 
+func find_hiding_spot(seeker_pos : Vector2, hider_pos : Vector2) -> Vector2: # seeker is enemy
+	var best_hiding_spot = null
+	var distance = INF
+	for node_position in nodes: # przechodzi po kluczach czyli po pozycjach
+		if not MyGraphEdge.doesnt_intersect_obstacle(seeker_pos, node_position, a_obstacles):
+			if distance > node_position.distance_to(hider_pos):
+				distance = node_position.distance_to(hider_pos)
+				best_hiding_spot = node_position
+	return best_hiding_spot
+
 func _ready() -> void:
 	var obstacles = get_parent().obstacles
 	var window_size = get_viewport_rect().size
 	const ACCURACY = Globals.RADIUS * 4
+	a_obstacles = get_parent().obstacles
 	
 	# TODO: This creates a proper graph, but is not a flood fill, so needs fixing
 	for y in range(Globals.RADIUS, window_size.y - Globals.RADIUS, ACCURACY):

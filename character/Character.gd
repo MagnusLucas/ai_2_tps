@@ -38,6 +38,9 @@ var starting_position : Vector2
 
 signal notice_collectible(collectible : Collectible)
 
+var memory_timer : Timer
+const MEMORY_INTERVAL = 0.2
+
 # For generating the graph. Checks if the character can be placed in a_position where you want to create a node
 static func check_if_placeable(a_position, a_obstacles):
 	for obstacle in a_obstacles:
@@ -64,6 +67,14 @@ func _ready() -> void:
 	memory = Memory.new()
 	current_state = State.RANDOM_WALK
 	notice_collectible.connect(_on_collectible_noticed)
+	memory_timer = Timer.new()
+	add_child(memory_timer)
+	memory_timer.start(MEMORY_INTERVAL * 1.5)
+	memory_timer.connect("timeout", on_timeout)
+
+func on_timeout():
+	memory.attacking_enemies = []
+	memory_timer.start(MEMORY_INTERVAL)
 
 func reset() -> void:
 	position = starting_position
@@ -80,10 +91,6 @@ func _input(event: InputEvent) -> void:
 		and get_global_mouse_position().distance_to(position) <= Globals.RADIUS
 		and event.is_pressed()):
 		in_focus = !in_focus
-		if armor_supply > 0:
-			armor_supply -= 10
-		else:
-			HP -= 10
 		queue_redraw()
 
 func _on_collectible_noticed(collectible : Collectible):
@@ -114,6 +121,7 @@ func watch_out_for_enemies(characters : Array) -> void:
 			memory.engaged_enemy = seen.front()
 	else:
 		memory.engaged_enemy = null
+		shooting = false
 	memory.seen_enemies = seen
 
 # Called every frame. 'delta' is the elapsed time since the previous frame.
@@ -130,10 +138,16 @@ func _process(delta: float) -> void:
 				memory.currently_followed_path = get_parent().graph.find_path(position, memory.engaged_enemy)
 				follow_path()
 				if HP < 51:
-					#current_state = State.FLEE
-					current_state = State.COLLECT_HEALING
+					current_state = State.FLEE
+					#current_state = State.COLLECT_HEALING
 		State.FLEE:
-			evade(memory.engaged_enemy)
+			var closest_attacking_enemy = null
+			var distance = INF
+			for enemy in memory.attacking_enemies:
+				if position.distance_to(enemy) < distance:
+					distance = position.distance_to(enemy)
+					closest_attacking_enemy = enemy
+			evade(closest_attacking_enemy)
 			
 			#for enemy_position in memory.non_engaged_seen_enemies:
 				#evade(enemy_position)
@@ -165,6 +179,8 @@ func _process(delta: float) -> void:
 			velocity = Vector2.ZERO
 			current_state = State.FLEE
 			current_state = State.COLLECT_AMMO #for now
+	else:
+		rotation += rotation_speed * delta
 	if in_focus:
 		get_parent().get_child(0).text = ("HP: " + str(HP) +"/" + str(MAX_HP) + 
 				" Armor: " + str(armor_supply) + "/" + str(MAX_ARMOR_SUPPLY) +
@@ -177,7 +193,8 @@ func wander():
 		memory.currently_followed_path = map_graph.find_path(position, map_graph.get_random_node().position)
 	follow_path()
 
-func take_damage(damage_value):
+func take_damage(damage_value, attacking_enemy):
+	memory.attacking_enemies.append(attacking_enemy)
 	if armor_supply > damage_value:
 		armor_supply -= damage_value
 		return
@@ -192,18 +209,20 @@ var shooting_accumulator = 0
 ## 
 func fight(enemy : Vector2, delta):
 	if enemy:
+		shooting = true
 		shooting_accumulator += delta
 		if shooting_accumulator > 0.2:
 			shooting_accumulator -= 0.2
 			ammo_supply -= 1
-			get_parent().get_enemy(enemy, self).take_damage(15)
+			get_parent().get_enemy(enemy, self).take_damage(15, position)
 
 ## TODO - until not seen??? then collect hp/ammo/armor
-func evade(enemy_position):
+func evade(enemy_position): # this is flee
 	if !enemy_position:
 		current_state = State.RANDOM_WALK
 	else:
-		pass
+		var hiding_spot = map_graph.find_hiding_spot(enemy_position, position)
+		memory.currently_followed_path = map_graph.find_path(position, hiding_spot)
 
 ## Handles collecting collectibles
 func collect(object_position : Vector2):
@@ -270,7 +289,7 @@ func _draw() -> void:
 		State.COLLECT_ARMOR:
 			color = Color.CADET_BLUE
 		State.FIGHT:
-			color = Color.ORANGE_RED
+			color = Color.YELLOW
 		State.FLEE:
 			color = Color.MEDIUM_SLATE_BLUE
 	for point in range(memory.currently_followed_path.size()-1):
@@ -281,9 +300,9 @@ func _draw() -> void:
 	if in_focus:
 		draw_circle(Vector2.ZERO, Globals.RADIUS, Color.WHITE, false, 1)
 		for enemy_position in memory.seen_enemies:
-			draw_line(Vector2.ZERO, enemy_position - position, Color.CHOCOLATE)
+			draw_line(Vector2.ZERO, enemy_position - position, Color.WEB_GREEN)
 		if memory.engaged_enemy:
 			draw_circle(memory.engaged_enemy - position, 4, Color.WHITE, false, 1)
 
 	if shooting:
-		draw_line(Vector2.ZERO, memory.engaged_enemy - position, Color.RED)
+		draw_line(Vector2.ZERO, memory.engaged_enemy - position, Color.RED, 4)

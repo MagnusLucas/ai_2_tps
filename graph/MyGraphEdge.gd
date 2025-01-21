@@ -5,7 +5,7 @@ var connected_nodes = {"from" : null, "to" : null}
 var cost
 
 # Checks if the edge wouldn't intersect any obstacles
-static func doesnt_intersect_obstacle(from, to, obstacles):
+static func doesnt_intersect_obstacle(from : Vector2, to : Vector2, obstacles):
 	var egde = PackedVector2Array([from, to])
 	for obstacle in obstacles:
 		var polygon = obstacle.vertices.duplicate()
