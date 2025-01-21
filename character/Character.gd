@@ -1,7 +1,7 @@
 extends Node2D
 class_name Character
 
-const VISIBILITY_CONE = 180.0 # in degrees
+const VISIBILITY_CONE = 90.0 # in degrees
 const ROTATION_SPEED = 10.0
 const WALK_SPEED = 30.0
 const DAMAGE = 5

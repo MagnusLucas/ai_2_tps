@@ -10,6 +10,9 @@ var path = []
 
 var a_obstacles
 
+const CENTER_RADIUS = 80
+const ACCURACY = Globals.RADIUS * 4
+
 #func _input(event: InputEvent) -> void:
 	#if (event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT 
 		#and event.is_pressed()):
@@ -150,13 +153,52 @@ func find_hiding_spot(seeker_pos : Vector2, hider_pos : Vector2) -> Vector2: # s
 				best_hiding_spot = node_position
 	return best_hiding_spot
 
+func pick_random_point_near_center():
+	var rand_angle = randf_range(0, TAU)
+	var viewport_center = get_viewport_rect().get_center()
+	return viewport_center + (randf_range(0, CENTER_RADIUS) * Vector2.RIGHT).rotated(rand_angle)
+
+func can_put_node_here(arg_position : Vector2) -> bool:
+	return (get_viewport_rect().grow(-Globals.RADIUS).has_point(arg_position) and
+	Character.check_if_placeable(arg_position, a_obstacles))
+
+func flood_fill(node_pos : Vector2, edge : MyGraphEdge = null):
+	var neighbor_position
+	var node = MyGraphNode.new()
+	node.position = node_pos
+	add_child(node, true)
+	nodes[node_pos] = node
+	if edge:
+		edge.connected_nodes["to"] = node
+		node.connected_edges.append(edge)
+		#thing for A* to work
+		edge.cost = node.position.distance_to(edge.neighbour(node).position)
+	for angle in range(0, TAU, PI/4):
+		neighbor_position = Vector2.RIGHT.rotated(angle) * ACCURACY
+		if can_put_node_here(neighbor_position):
+			if can_smooth(node_pos, neighbor_position):
+				var edge2 = MyGraphEdge.new()
+				edge2.connected_nodes["from"] = node
+				node.connected_edges.append(edge2)
+				add_child(edge2)
+				edges.append(edge2)
+			if not nodes.has(neighbor_position):
+				flood_fill(neighbor_position)
+	
+
 func _ready() -> void:
 	var obstacles = get_parent().obstacles
 	var window_size = get_viewport_rect().size
-	const ACCURACY = Globals.RADIUS * 4
+	var graph_starting_point
 	a_obstacles = get_parent().obstacles
 	
 	# TODO: This creates a proper graph, but is not a flood fill, so needs fixing
+	#graph_starting_point = pick_random_point_near_center()
+	#while not Character.check_if_placeable(graph_starting_point, obstacles):
+		#graph_starting_point = pick_random_point_near_center()
+	#
+	#flood_fill(graph_starting_point)
+	
 	for y in range(Globals.RADIUS, window_size.y - Globals.RADIUS, ACCURACY):
 		for x in range(Globals.RADIUS, window_size.x - Globals.RADIUS, ACCURACY):
 			var node_position = Vector2(x, y)
